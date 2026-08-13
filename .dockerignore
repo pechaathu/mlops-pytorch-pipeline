@@ -1,0 +1,11 @@
+# Keep the Docker build context small and clean
+data/
+checkpoints/
+.git/
+__pycache__/
+*.pt
+*.pth
+.venv/
+venv/
+test_image.png
+*.md
