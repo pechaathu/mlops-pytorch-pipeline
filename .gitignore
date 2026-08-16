@@ -29,3 +29,6 @@ Thumbs.db
 
 # Logs
 *.log
+
+# Generated test artifacts
+test_image.png

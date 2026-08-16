@@ -1,0 +1,31 @@
+# syntax=docker/dockerfile:1
+
+# ---- Stage 1: base image with dependencies ----
+FROM python:3.11-slim AS base
+WORKDIR /app
+
+# Copy only requirements first so Docker can cache the (slow) install layer
+# and reuse it whenever only source code changes.
+COPY requirements/train.txt .
+
+# Install CPU-only PyTorch (much smaller than the default CUDA build),
+# then the rest of the pinned dependencies. --no-cache-dir keeps the image lean.
+# --timeout and --retries make the big torch download resilient to network blips.
+RUN pip install --no-cache-dir --timeout 120 --retries 10 \
+        torch==2.13.0 torchvision==0.28.0 \
+        --index-url https://download.pytorch.org/whl/cpu \
+    && pip install --no-cache-dir --timeout 120 --retries 10 pyyaml==6.0.3
+
+# ---- Stage 2: training runtime ----
+FROM base AS training
+WORKDIR /app
+
+# Bring in source code and configuration.
+COPY src/ ./src/
+COPY configs/ ./configs/
+
+# Print logs immediately (unbuffered) so JSON training logs stream live.
+ENV PYTHONUNBUFFERED=1
+
+# Running the container starts training.
+ENTRYPOINT ["python", "src/train.py"]
